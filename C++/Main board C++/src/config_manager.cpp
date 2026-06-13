@@ -209,6 +209,7 @@ bool ConfigManager::loadConfig(Config &cfg) {
     cfg.emaAlphaMoving = doc["ema_alpha_moving"] | Defaults::emaAlphaMoving;
     cfg.legAngleTolerance = doc["leg_angle_tolerance"] | Defaults::legAngleTolerance;
     cfg.legDistanceTolerance = doc["leg_distance_tolerance"] | Defaults::legDistanceTolerance;
+    cfg.cartesianTolerance = doc["cartesian_tolerance"] | Defaults::cartesianTolerance;
     cfg.laserDistanceOffset = doc["laser_distance_offset"] | Defaults::laserDistanceOffset;
     cfg.calMagConsistency = doc["cal_mag_consistency"] | Defaults::calMagConsistency;
     cfg.calGravConsistency = doc["cal_grav_consistency"] | Defaults::calGravConsistency;
@@ -254,6 +255,7 @@ bool ConfigManager::saveConfig(const Config &cfg) {
     doc["ema_alpha_moving"] = cfg.emaAlphaMoving;
     doc["leg_angle_tolerance"] = cfg.legAngleTolerance;
     doc["leg_distance_tolerance"] = cfg.legDistanceTolerance;
+    doc["cartesian_tolerance"] = cfg.cartesianTolerance;
     doc["laser_distance_offset"] = cfg.laserDistanceOffset;
     doc["cal_mag_consistency"] = cfg.calMagConsistency;
     doc["cal_grav_consistency"] = cfg.calGravConsistency;

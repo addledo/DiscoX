@@ -1766,6 +1766,7 @@ static void initFlash() {
             Serial.println(F("  No saved config — writing defaults"));
             configMgr.saveConfig(ctx.config);
         }
+        ctx.legChecker.setTolerance(ctx.config.cartesianTolerance);
 
         if (dispOk) {
             display.setBrightness(ctx.config.screenBrightness);
