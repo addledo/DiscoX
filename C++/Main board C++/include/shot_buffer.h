@@ -1,35 +1,15 @@
 #pragma once
 
+#include "leg_checker.h"
+#include "shot_vector.h"
 #include <Arduino.h>
-
-struct ShotVector {
-    float azimuth = 0.0f;     // degrees, 0-360
-    float inclination = 0.0f; // degrees, -90 to +90
-    float distance = 0.0f;    // meters
-
-    ShotVector() = default;
-    ShotVector(float az, float inc, float dist) : azimuth(az), inclination(inc), distance(dist) {}
-};
-
-class ILegChecker {
-  public:
-    virtual bool hasValidLeg(const ShotVector* shots, uint8_t count) const = 0;
-    virtual ~ILegChecker() = default;
-};
-
-class CartesianLegChecker : public ILegChecker {
-  public:
-    bool hasValidLeg(const ShotVector* shots, uint8_t count) const override {
-        return false;
-    }
-};
 
 // Ring buffer of up to 3 ShotVectors for leg-consistency checking.
 class ShotBuffer {
   public:
     static constexpr uint8_t CAPACITY = 3;
 
-    ShotBuffer(const ILegChecker& checker) : checker_(checker) {}
+    ShotBuffer(const ILegChecker &checker) : checker_(checker) {}
 
     void push(const ShotVector &s) {
         if (count_ < CAPACITY) {
@@ -49,12 +29,14 @@ class ShotBuffer {
     const ShotVector &operator[](uint8_t i) const { return buf_[i]; }
 
     bool hasValidLeg() const {
-        if (count_ < CAPACITY) return false;
+        if (count_ < CAPACITY) {
+            return false;
+        }
         return checker_.hasValidLeg(buf_, count_);
     }
 
   private:
-    const ILegChecker& checker_;
+    const ILegChecker &checker_;
     ShotVector buf_[CAPACITY];
     uint8_t count_ = 0;
 };

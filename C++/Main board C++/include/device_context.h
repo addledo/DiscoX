@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "leg_checker.h"
 #include "shot_buffer.h"
 #include <Arduino.h>
 
