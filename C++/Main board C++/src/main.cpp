@@ -160,9 +160,6 @@ static void msc_flush_cb() { s_mscFlash->syncBlocks(); }
 // ── Setup ─────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 void setup() {
-    // Prevent green flash on boot.
-    DiscoManager::killPower();
-
     // Get display up ASAP — before serial, which can block on USB enumeration
     Wire.begin();
     Wire.setClock(400000);

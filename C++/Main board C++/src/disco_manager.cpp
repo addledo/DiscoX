@@ -3,11 +3,6 @@
 
 // ── Lifecycle ────────────────────────────────────────────────────────
 
-void DiscoManager::killPower() {
-    pinMode(PIN_NEOPIXEL_POWER, OUTPUT);
-    digitalWrite(PIN_NEOPIXEL_POWER, LOW);
-}
-
 void DiscoManager::begin() {
     pixel_.begin();
     pixel_.setBrightness(255); // HW brightness max; we software-scale
