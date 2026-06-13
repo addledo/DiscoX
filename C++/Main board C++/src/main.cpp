@@ -1197,8 +1197,7 @@ static void handleMeasurementSuccess() {
 
     // Check leg completion when we have 3 consistent readings
     if (ctx.shotBuf.full()) {
-        bool legComplete =
-            ctx.shotBuf.isConsistent(ctx.config.legAngleTolerance, ctx.config.legDistanceTolerance);
+        bool legComplete = ctx.shotBuf.isConsistent();
 
         if (legComplete) {
             // Triple buzz + white flash

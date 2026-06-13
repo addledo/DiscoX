@@ -11,10 +11,25 @@ struct ShotVector {
     ShotVector(float az, float inc, float dist) : azimuth(az), inclination(inc), distance(dist) {}
 };
 
+class ILegChecker {
+  public:
+    virtual bool isConsistent(const ShotVector* shots, uint8_t count) const = 0;
+    virtual ~ILegChecker() = default;
+};
+
+class CartesianLegChecker : public ILegChecker {
+  public:
+    bool isConsistent(const ShotVector* shots, uint8_t count) const override {
+        return false;
+    }
+};
+
 // Ring buffer of up to 3 ShotVectors for leg-consistency checking.
 class ShotBuffer {
   public:
     static constexpr uint8_t CAPACITY = 3;
+
+    ShotBuffer(const ILegChecker& checker) : checker_(checker) {}
 
     void push(const ShotVector &s) {
         if (count_ < CAPACITY) {
@@ -33,34 +48,13 @@ class ShotBuffer {
 
     const ShotVector &operator[](uint8_t i) const { return buf_[i]; }
 
-    // True if all buffered shots agree within tolerances.
-    // angleTol applies to both azimuth (circular) and inclination (linear).
-    bool isConsistent(float angleTol, float distTol) const {
-        if (count_ < CAPACITY) {
-            return false;
-        }
-        for (uint8_t i = 0; i < count_; i++) {
-            for (uint8_t j = i + 1; j < count_; j++) {
-                if (circularDiff(buf_[i].azimuth, buf_[j].azimuth) > angleTol) {
-                    return false;
-                }
-                if (fabsf(buf_[i].inclination - buf_[j].inclination) > angleTol) {
-                    return false;
-                }
-                if (fabsf(buf_[i].distance - buf_[j].distance) > distTol) {
-                    return false;
-                }
-            }
-        }
-        return true;
+    bool isConsistent() const {
+        if (count_ < CAPACITY) return false;
+        return checker_.isConsistent(buf_, count_);
     }
 
   private:
+    const ILegChecker& checker_;
     ShotVector buf_[CAPACITY];
     uint8_t count_ = 0;
-
-    static float circularDiff(float a, float b) {
-        float d = fmodf(a - b + 180.0f, 360.0f) - 180.0f;
-        return fabsf(d);
-    }
 };
