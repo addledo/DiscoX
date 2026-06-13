@@ -19,6 +19,9 @@ class DiscoManager {
     /// Call once in setup() after pin init
     void begin();
 
+    /// Kill NeoPixel power before begin() — call at the top of setup() to prevent green flash on boot
+    static void killPower();
+
     /// Call every loop() iteration — drives animations non-blockingly
     void update(float accelX, float accelY, float accelZ);
 

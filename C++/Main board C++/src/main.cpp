@@ -160,9 +160,8 @@ static void msc_flush_cb() { s_mscFlash->syncBlocks(); }
 // ── Setup ─────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 void setup() {
-    // Kill NeoPixel immediately to prevent green flash on boot
-    pinMode(PIN_NEOPIXEL_POWER, OUTPUT);
-    digitalWrite(PIN_NEOPIXEL_POWER, LOW);
+    // Prevent green flash on boot.
+    DiscoManager::killPower();
 
     // Get display up ASAP — before serial, which can block on USB enumeration
     Wire.begin();
