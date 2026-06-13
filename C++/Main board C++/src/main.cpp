@@ -192,8 +192,6 @@ static void alertError(const char *errCode);
 static void resetLaser();
 static void doShutdown();
 static float circularDiff(float a, float b);
-static bool bearingsWithinTol(const float *vals, uint8_t n, float tol);
-static bool linearWithinTol(const float *vals, uint8_t n, float tol);
 static void onFlushReading(float az, float inc, float dist);
 static void enterUsbDriveMode(); // USB MSC loop (does not return)
 
@@ -1192,43 +1190,15 @@ static void handleMeasurementSuccess() {
 
     Serial.println(F("  HS:3 leg buf"));
     Serial.flush();
-    uint8_t idx = ctx.stableBufCount;
-
-    if (idx < 3) {
-        // Buffer not full, add the readings to the end.
-        ctx.stableAzimuthBuf[idx] = ctx.readings.azimuth;
-        ctx.stableInclinationBuf[idx] = ctx.readings.inclination;
-        ctx.stableDistanceBuf[idx] = ctx.readings.distance;
-        ctx.stableBufCount++;
-    } else {
-        // Buffer full, discard oldest readings and shift the rest left to make room for the new ones.
-
-        // Shift Azimuth
-        ctx.stableAzimuthBuf[0] = ctx.stableAzimuthBuf[1];
-        ctx.stableAzimuthBuf[1] = ctx.stableAzimuthBuf[2];
-        // Shift Inclination
-        ctx.stableInclinationBuf[0] = ctx.stableInclinationBuf[1];
-        ctx.stableInclinationBuf[1] = ctx.stableInclinationBuf[2];
-        // Shift Distance
-        ctx.stableDistanceBuf[0] = ctx.stableDistanceBuf[1];
-        ctx.stableDistanceBuf[1] = ctx.stableDistanceBuf[2];
-
-        // Add the new readings
-        ctx.stableAzimuthBuf[2] = ctx.readings.azimuth;
-        ctx.stableInclinationBuf[2] = ctx.readings.inclination;
-        ctx.stableDistanceBuf[2] = ctx.readings.distance;
-    }
+    ctx.shotBuf.push(ShotVector(ctx.readings.azimuth, ctx.readings.inclination, ctx.readings.distance));
 
     Serial.println(F("  HS:4 leg check"));
     Serial.flush();
 
-    // Check leg completion when we have 3 readings
-    if (ctx.stableBufCount >= 3) {
-        bool azOk = bearingsWithinTol(ctx.stableAzimuthBuf, 3, ctx.config.legAngleTolerance);
-        bool incOk = linearWithinTol(ctx.stableInclinationBuf, 3, ctx.config.legAngleTolerance);
-        bool distOk = linearWithinTol(ctx.stableDistanceBuf, 3, ctx.config.legDistanceTolerance);
-
-        bool legComplete = azOk && incOk && distOk;
+    // Check leg completion when we have 3 consistent readings
+    if (ctx.shotBuf.full()) {
+        bool legComplete =
+            ctx.shotBuf.isConsistent(ctx.config.legAngleTolerance, ctx.config.legDistanceTolerance);
 
         if (legComplete) {
             // Triple buzz + white flash
@@ -1246,8 +1216,7 @@ static void handleMeasurementSuccess() {
                 laser.wibble();
             }
 
-            // Clear buffers
-            ctx.stableBufCount = 0;
+            ctx.shotBuf.clear();
 
             // Latch purple
             disco.setPurple();
@@ -1679,28 +1648,6 @@ static void doShutdown() {
 static float circularDiff(float a, float b) {
     float d = fmodf(a - b + 180.0f, 360.0f) - 180.0f;
     return fabsf(d);
-}
-
-static bool bearingsWithinTol(const float *vals, uint8_t n, float tol) {
-    for (uint8_t i = 0; i < n; i++) {
-        for (uint8_t j = i + 1; j < n; j++) {
-            if (circularDiff(vals[i], vals[j]) > tol) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-static bool linearWithinTol(const float *vals, uint8_t n, float tol) {
-    for (uint8_t i = 0; i < n; i++) {
-        for (uint8_t j = i + 1; j < n; j++) {
-            if (fabsf(vals[i] - vals[j]) > tol) {
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
 static void onFlushReading(float az, float inc, float dist) {

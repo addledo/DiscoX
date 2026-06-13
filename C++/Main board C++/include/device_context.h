@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "shot_buffer.h"
 #include <Arduino.h>
 
 // ── System states ───────────────────────────────────────────────────
@@ -73,11 +74,8 @@ struct DeviceContext {
     bool purpleLatched = false;
     bool displayFrozen = false; // true = show frozen shot readings, not live
 
-    // Stability buffers (fixed-size, index-managed)
-    float stableAzimuthBuf[3] = {};
-    float stableInclinationBuf[3] = {};
-    float stableDistanceBuf[3] = {};
-    uint8_t stableBufCount = 0;
+    // Leg-consistency buffer
+    ShotBuffer shotBuf;
 
     // (EMA state lives in SensorManager — complementary gravity filter + EMA smoothing)
 };
