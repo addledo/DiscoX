@@ -13,13 +13,13 @@ struct ShotVector {
 
 class ILegChecker {
   public:
-    virtual bool isConsistent(const ShotVector* shots, uint8_t count) const = 0;
+    virtual bool hasValidLeg(const ShotVector* shots, uint8_t count) const = 0;
     virtual ~ILegChecker() = default;
 };
 
 class CartesianLegChecker : public ILegChecker {
   public:
-    bool isConsistent(const ShotVector* shots, uint8_t count) const override {
+    bool hasValidLeg(const ShotVector* shots, uint8_t count) const override {
         return false;
     }
 };
@@ -48,9 +48,9 @@ class ShotBuffer {
 
     const ShotVector &operator[](uint8_t i) const { return buf_[i]; }
 
-    bool isConsistent() const {
+    bool hasValidLeg() const {
         if (count_ < CAPACITY) return false;
-        return checker_.isConsistent(buf_, count_);
+        return checker_.hasValidLeg(buf_, count_);
     }
 
   private:

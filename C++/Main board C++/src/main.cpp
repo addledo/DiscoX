@@ -1195,36 +1195,31 @@ static void handleMeasurementSuccess() {
     Serial.println(F("  HS:4 leg check"));
     Serial.flush();
 
-    // Check leg completion when we have 3 consistent readings
-    if (ctx.shotBuf.full()) {
-        bool legComplete = ctx.shotBuf.isConsistent();
-
-        if (legComplete) {
-            // Triple buzz + white flash
-            for (int i = 0; i < 3; i++) {
-                laser.setBuzzer(true);
-                disco.setWhite();
-                delay(100);
-                laser.setBuzzer(false);
-                disco.turnOff();
-                delay(100);
-            }
-
-            // Laser wibble to indicate leg detected
-            if (ctx.config.laserWibble) {
-                laser.wibble();
-            }
-
-            ctx.shotBuf.clear();
-
-            // Latch purple
-            disco.setPurple();
-            ctx.purpleLatched = true;
-            ctx.measurementTaken = true;
-
-            Serial.println(F("LEG COMPLETE — 3 consistent readings"));
-            return;
+    if (ctx.shotBuf.hasValidLeg()) {
+        // Triple buzz + white flash
+        for (int i = 0; i < 3; i++) {
+            laser.setBuzzer(true);
+            disco.setWhite();
+            delay(100);
+            laser.setBuzzer(false);
+            disco.turnOff();
+            delay(100);
         }
+
+        // Laser wibble to indicate leg detected
+        if (ctx.config.laserWibble) {
+            laser.wibble();
+        }
+
+        ctx.shotBuf.clear();
+
+        // Latch purple
+        disco.setPurple();
+        ctx.purpleLatched = true;
+        ctx.measurementTaken = true;
+
+        Serial.println(F("LEG COMPLETE — 3 consistent readings"));
+        return;
     }
 
     // Successful reading but leg not complete
