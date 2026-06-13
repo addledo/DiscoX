@@ -1,5 +1,6 @@
 #include "ble_manager.h"
 #include "button_manager.h"
+#include "calibration_data.h"
 #include "calibration_mode.h"
 #include "config.h"
 #include "config_manager.h"
@@ -8,72 +9,16 @@
 #include "display_manager.h"
 #include "laser_egismos.h"
 #include "mag_cal/calibration.h"
+#include "max17048_persistent.h"
 #include "menu_manager.h"
 #include "rm3100.h"
 #include "sensor_manager.h"
 #include "snake_game.h"
 #include <Adafruit_ISM330DHCX.h>
-#include <Adafruit_MAX1704X.h>
 #include <Adafruit_SPIFlash.h>
 #include <Adafruit_TinyUSB.h>
 #include <Arduino.h>
 #include <Wire.h>
-
-// ── Embedded calibration data ──────────────────────────────────────
-// From Main board/calibration_dict.json — loaded at startup
-static const char CALIBRATION_JSON[] PROGMEM = R"({
-  "mag": {
-    "axes": "-X-Y-Z",
-    "transform": [[0.0225258, -0.000348105, -0.000709316],
-                   [0.000171691, 0.0221358, -0.000679377],
-                   [0.000447533, -0.000145672, 0.0225338]],
-    "centre": [-0.205928, -1.49322, 3.39001],
-    "rbfs": [[[0.003298], [-0.000433647], [0.000818552], [-0.00208113], [0.00252497]],
-             [[0.0], [0.0], [0.0], [0.0], [0.0]],
-             [[0.00067137], [0.000540657], [0.000939099], [0.00137892], [0.00192191]]],
-    "field_avg": 44.6264,
-    "field_std": 0.310694
-  },
-  "dip_avg": 68.9221,
-  "grav": {
-    "axes": "-Y-X+Z",
-    "transform": [[0.101936, -0.00167875, 0.000143624],
-                   [0.0015862, 0.10164, 0.000604115],
-                   [0.000153489, -0.000228592, 0.102199]],
-    "centre": [0.235023, 0.0249322, 0.100026],
-    "rbfs": [],
-    "field_avg": 9.81022,
-    "field_std": 0.00509215
-  }
-})";
-
-// ── MAX17048 subclass: skip reset() to preserve ModelGauge state ────
-// The stock begin() calls reset() which wipes the IC's learned battery
-// model, forcing a voltage-only "first guess" every boot.  By skipping
-// the reset the IC keeps tracking SOC across reboots (it still PORs on
-// its own if battery power is lost).
-class MAX17048_Persistent : public Adafruit_MAX17048 {
-  public:
-    bool begin(TwoWire *wire = &Wire) {
-        if (i2c_dev) {
-            delete i2c_dev;
-            delete status_reg;
-        }
-        i2c_dev = new Adafruit_I2CDevice(MAX17048_I2CADDR_DEFAULT, wire);
-        if (!i2c_dev->begin()) {
-            return false;
-        }
-        if (!isDeviceReady()) {
-            return false;
-        }
-        status_reg = new Adafruit_BusIO_Register(i2c_dev, MAX1704X_STATUS_REG);
-        // No reset() — preserve ModelGauge tracking state
-        enableSleep(false);
-        sleep(false);
-        wake(); // exit hibernation if the IC entered it
-        return true;
-    }
-};
 
 // ── Global state ────────────────────────────────────────────────────
 DeviceContext ctx;
