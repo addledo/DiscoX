@@ -168,10 +168,8 @@ void setup() {
     Wire.setClock(400000);
     initDisplay();
 
-    // Configure button pull-ups BEFORE reading them
-    pinMode(PIN_BTN_MEASURE, INPUT_PULLUP);
-    pinMode(PIN_BTN_FIRE, INPUT_PULLUP);
-    delayMicroseconds(50); // let pull-ups settle before reading
+    initPins();
+    delayMicroseconds(50); // let pull-ups settle before reading buttons
 
     // ── Early USB drive mode check ─────────────────────────────────
     // Must happen BEFORE Serial.begin() so MSC is part of the initial
@@ -258,7 +256,6 @@ void setup() {
     Serial.println(F("Session 12 — Full Integration"));
     Serial.println();
 
-    initPins();
     buttons.begin();
 
     // ── Sensors ──
