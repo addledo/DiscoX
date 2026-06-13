@@ -931,9 +931,11 @@ static void pollMeasurement(uint32_t now) {
     if (ctx.currentState != SystemState::TAKING_MEASUREMENT) {
         return;
     }
+
     if (ctx.measurementTaken) {
         return;
     }
+
     if (!calOk || !magOk || !imuOk || !laserOk) {
         Serial.println(F("MEAS: sensors not ready"));
         ctx.quickShot = false;
@@ -952,18 +954,13 @@ static void pollMeasurement(uint32_t now) {
             delay(200);
             ctx.laserEnabled = true;
         }
-        // Entry click buzzer
-        if (laserOk) {
-            laser.setBuzzer(true);
-            delay(100);
-            laser.setBuzzer(false);
-            delay(25);
-        }
+        laser.singleBeep();
         measRedLedSet = true;
     }
 
     // Wait for stability — use wider tolerance for quick shot
     float stabTol = ctx.quickShot ? Defaults::quickShotStabilityTol : ctx.config.stabilityTolerance;
+
     if (!sensorMgr.isStable(stabTol)) {
         static uint32_t lastStabDbg = 0;
         uint32_t n = millis();
@@ -1076,6 +1073,7 @@ static void pollMeasurement(uint32_t now) {
         laser.setLaser(false);
     }
     ctx.laserEnabled = false;
+
     if (!ctx.purpleLatched) {
         disco.turnOff();
     }
