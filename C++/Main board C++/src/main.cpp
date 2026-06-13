@@ -91,7 +91,6 @@ bool imuOk   = false;
 bool batOk   = false;
 bool dispOk  = false;
 bool laserOk = false;
-bool bleOk   = false;
 bool calOk   = false;
 bool calFromFlash = false;  // true = loaded from QSPI, false = PROGMEM fallback
 bool flashOk = false;
@@ -1115,13 +1114,11 @@ static void handleMeasurementSuccess() {
     disco.setGreen();
 
     Serial.print(F("  HS:2 bleConn="));
-    Serial.print(ctx.bleConnected);
-    Serial.print(F(" bleOk="));
-    Serial.println(bleOk);
+    Serial.println(ctx.bleConnected);
     Serial.flush();
     delay(50);
     // Send via BLE or queue
-    if (ctx.bleConnected && bleOk) {
+    if (ctx.bleConnected) {
         Serial.println(F("  HS:2a ble send")); Serial.flush(); delay(50);
         ble.sendSurveyData(ctx.readings.azimuth,
                            ctx.readings.inclination,
@@ -1245,7 +1242,6 @@ static void alertError(const char* errCode) {
 
 // ── BLE pin monitoring (connection state + flush) ───────────────
 static void pollBLEPin(uint32_t now) {
-    if (!bleOk) return;
     if (now - lastBleCheck < Timing::BLE_PIN_CHECK_MS) return;
     lastBleCheck = now;
 
@@ -1299,7 +1295,6 @@ static void pollBLEPin(uint32_t now) {
 
 // ── BLE UART command processing ─────────────────────────────────
 static void pollBLECommands(uint32_t now) {
-    if (!bleOk) return;
     if (now - lastBleUartPoll < Timing::BLE_UART_POLL_MS) return;
     lastBleUartPoll = now;
 
@@ -1360,7 +1355,7 @@ static void pollBLECommands(uint32_t now) {
 
 // ── BLE startup name sync (robust against faster main-board boot) ──
 static void pollBLEStartupNameSync(uint32_t now) {
-    if (!bleOk || bleNameSyncDone) return;
+    if (bleNameSyncDone) return;
 
     constexpr uint32_t NAME_SYNC_INITIAL_DELAY_MS = 1200;
     constexpr uint32_t NAME_SYNC_RETRY_MS         = 800;
@@ -1534,7 +1529,7 @@ static void updateDisplay(uint32_t now) {
     }
 
     display.updateBattery(lastBatPct);
-    display.updateBTLabel(bleOk ? ble.isConnected() : false);
+    display.updateBTLabel(ble.isConnected());
     display.refresh();
 }
 
@@ -1680,9 +1675,8 @@ static void initLaser() {
 }
 
 static void initBle() {
-    bleOk = ble.begin();
-    Serial.print(F("BLE UART:    "));
-    Serial.println(bleOk ? F("OK (SERCOM1 @ 9600)") : F("FAILED"));
+    ble.begin();
+    Serial.println(F("BLE UART:    OK (SERCOM1 @ 9600)"));
 
     Serial.println();
 }
