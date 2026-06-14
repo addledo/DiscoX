@@ -8,6 +8,7 @@
 #include "display_manager.h"
 #include "laser_egismos.h"
 #include "mag_cal/calibration.h"
+#include "math_utils.h"
 #include "menu_manager.h"
 #include "rm3100.h"
 #include "sensor_manager.h"
@@ -191,7 +192,6 @@ static void handleMeasurementSuccess();
 static void alertError(const char *errCode);
 static void resetLaser();
 static void doShutdown();
-static float circularDiff(float a, float b);
 static void onFlushReading(float az, float inc, float dist);
 static void enterUsbDriveMode(); // USB MSC loop (does not return)
 
@@ -1552,7 +1552,7 @@ static void updateDisplay(uint32_t now) {
             gyroStillSince = now; // reset settle timer
             anchored = false;
             // Device is moving — update displayed values (with deadband)
-            if (SensorManager::circularDiff(liveAz, dispAz) > DEADBAND_ANGLE) {
+            if (circularDiff(liveAz, dispAz) > DEADBAND_ANGLE) {
                 dispAz = liveAz;
             }
             if (fabsf(liveInc - dispInc) > DEADBAND_ANGLE) {
@@ -1560,7 +1560,7 @@ static void updateDisplay(uint32_t now) {
             }
         } else if ((now - gyroStillSince) < Defaults::gyroSettleMs) {
             // Still settling — keep updating so EMA can converge
-            if (SensorManager::circularDiff(liveAz, dispAz) > DEADBAND_ANGLE) {
+            if (circularDiff(liveAz, dispAz) > DEADBAND_ANGLE) {
                 dispAz = liveAz;
             }
             if (fabsf(liveInc - dispInc) > DEADBAND_ANGLE) {
@@ -1645,10 +1645,6 @@ static void doShutdown() {
     }
 }
 
-static float circularDiff(float a, float b) {
-    float d = fmodf(a - b + 180.0f, 360.0f) - 180.0f;
-    return fabsf(d);
-}
 
 static void onFlushReading(float az, float inc, float dist) {
     Serial.print(F("FLUSH: az="));

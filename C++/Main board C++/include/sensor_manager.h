@@ -24,8 +24,6 @@ class SensorManager {
     bool isStable(const ILegChecker &checker) const;
     void resetStability();
 
-    /// Wraparound-safe angular distance (0–180)
-    static float circularDiff(float a, float b);
 
   private:
     // EMA-smoothed output angles

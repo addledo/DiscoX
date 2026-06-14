@@ -1,4 +1,5 @@
 #include "sensor_manager.h"
+#include "math_utils.h"
 #include "shot_vector.h"
 #include <cmath>
 
@@ -180,9 +181,3 @@ float SensorManager::medianN(float *vals, uint8_t n) {
     return vals[n / 2];
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────
-
-float SensorManager::circularDiff(float a, float b) {
-    float d = fmodf(a - b + 180.0f, 360.0f) - 180.0f;
-    return fabsf(d);
-}

@@ -1,4 +1,5 @@
 #include "calibration_mode.h"
+#include "math_utils.h"
 #include <math.h>
 
 // ── Initialization ──────────────────────────────────────────────────
@@ -1484,16 +1485,6 @@ float CalibrationMode::getBearing(const Eigen::Vector3f &mag, const Eigen::Vecto
     return angles.azimuth;
 }
 
-float CalibrationMode::circularDiff(float a, float b) {
-    float d = a - b;
-    while (d > 180.0f) {
-        d -= 360.0f;
-    }
-    while (d < -180.0f) {
-        d += 360.0f;
-    }
-    return fabsf(d);
-}
 
 bool CalibrationMode::fbBearingStable(float tolerance) const {
     if (fbStabCount_ < FB_STAB_LEN) {
