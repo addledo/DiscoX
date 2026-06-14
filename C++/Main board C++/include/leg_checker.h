@@ -1,11 +1,10 @@
 #pragma once
 
 #include "shot_vector.h"
-#include <Arduino.h>
 
 class ILegChecker {
   public:
-    virtual bool hasValidLeg(const Shot *shots, uint8_t count) const = 0;
+    virtual bool hasValidLeg(const Shot *shots, int count) const = 0;
     virtual ~ILegChecker() = default;
 };
 
@@ -28,7 +27,7 @@ class AngularLegChecker : public ILegChecker {
   public:
     AngularLegChecker(float toleranceDeg);
     void setTolerance(float toleranceDeg);
-    bool hasValidLeg(const Shot *shots, uint8_t count) const override;
+    bool hasValidLeg(const Shot *shots, int count) const override;
 
   private:
     float toleranceRad_;
@@ -44,7 +43,7 @@ class CartesianLegChecker : public ILegChecker {
     void setTolerance(float toleranceCm);
 
     // Checks that each point is within the tolerated distance of each other point.
-    bool hasValidLeg(const Shot *shots, uint8_t count) const override;
+    bool hasValidLeg(const Shot *shots, int count) const override;
 
   private:
     float toleranceM_;

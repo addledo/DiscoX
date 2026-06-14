@@ -1,8 +1,8 @@
 #include "leg_checker.h"
 
-#include "config.h"
+#include "defaults.h"
 #include "math_utils.h"
-#include <Arduino.h>
+#include <math.h>
 
 CartesianCoordinate::CartesianCoordinate(float x, float y, float z) : x(x), y(y), z(z) {}
 
@@ -31,8 +31,8 @@ AngularLegChecker::AngularLegChecker(float toleranceDeg) : toleranceRad_(degrees
 
 void AngularLegChecker::setTolerance(float toleranceDeg) { toleranceRad_ = degreesToRadians(toleranceDeg); }
 
-bool AngularLegChecker::hasValidLeg(const Shot *shots, uint8_t count) const {
-    if (!shots || count == 0 || count > 8) {
+bool AngularLegChecker::hasValidLeg(const Shot *shots, int count) const {
+    if (!shots || count <= 0 || count > 8) {
         return false;
     }
 
@@ -57,8 +57,8 @@ void CartesianLegChecker::setTolerance(float toleranceCm) {
     toleranceM_ = toleranceCm / 100.0f;
 }
 
-bool CartesianLegChecker::hasValidLeg(const Shot *shots, uint8_t count) const {
-    if (!shots || count == 0 || count > 8) {
+bool CartesianLegChecker::hasValidLeg(const Shot *shots, int count) const {
+    if (!shots || count <= 0 || count > 8) {
         return false;
     }
 
