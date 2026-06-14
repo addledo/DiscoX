@@ -3,3 +3,6 @@ build target="main":
 
 lsp:
     cd "C++/Main Board C++" && pio run -t compiledb
+
+test:
+    cd "C++/Main board C++" && pio test -e native
