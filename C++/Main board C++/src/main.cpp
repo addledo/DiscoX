@@ -551,6 +551,8 @@ void loop() {
         delay(Timing::LOOP_INTERVAL_MS);
         return;
     }
+
+    // Mag Field Check (Foreshot/Backshot)
     if (menuMgr.exitAction() == MenuExitAction::ENTER_FB_CHECK) {
         menuMgr.clearExitAction();
         if (magOk && imuOk && dispOk && laserOk && calOk) {
@@ -565,6 +567,8 @@ void loop() {
         delay(Timing::LOOP_INTERVAL_MS);
         return;
     }
+
+    // Snake
     if (menuMgr.exitAction() == MenuExitAction::ENTER_SNAKE) {
         menuMgr.clearExitAction();
         if (dispOk) {
@@ -578,6 +582,8 @@ void loop() {
         delay(Timing::LOOP_INTERVAL_MS);
         return;
     }
+
+    // Update Firmware
     if (menuMgr.exitAction() == MenuExitAction::ENTER_BOOTLOADER) {
         menuMgr.clearExitAction();
         Serial.println(F("Entering UF2 bootloader..."));
@@ -599,13 +605,16 @@ void loop() {
             d.display();
             delay(3000);
         }
-// Write UF2 bootloader magic to end of RAM and reset
-// SAME51J19A: 192KB RAM at 0x20000000, so end-4 = 0x2002FFFC
+
+        // Write UF2 bootloader magic to end of RAM and reset
+        // SAME51J19A: 192KB RAM at 0x20000000, so end-4 = 0x2002FFFC
 #define BOOT_DOUBLE_TAP_ADDRESS (0x2002FFFCul)
         *((volatile uint32_t *)BOOT_DOUBLE_TAP_ADDRESS) = 0xf01669efUL;
         NVIC_SystemReset();
         // Does not return
     }
+
+    // Edit settings file
     if (menuMgr.exitAction() == MenuExitAction::ENTER_USB_DRIVE) {
         menuMgr.clearExitAction();
         Serial.println(F("Entering USB drive mode..."));
@@ -643,6 +652,8 @@ void loop() {
         NVIC_SystemReset();
         // Does not return
     }
+
+    // Reformat via USB
     if (menuMgr.exitAction() == MenuExitAction::REFORMAT_FLASH) {
         menuMgr.clearExitAction();
         // On-device FAT formatting can't work on this 2MB chip (SdFat's
@@ -671,7 +682,7 @@ void loop() {
         return;
     }
 
-    // ── Calibration mode: CalibrationMode owns the loop ──
+    //  Calibration mode
     if (calMode.isActive()) {
         bool done = calMode.update();
         if (done) {
