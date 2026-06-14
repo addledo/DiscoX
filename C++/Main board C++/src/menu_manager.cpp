@@ -111,8 +111,7 @@ void MenuManager::buildMenu() {
     uint8_t bpct = (uint8_t)((uint16_t)_ctx->config.screenBrightness * 100 / 255);
     snprintf(_brightnessLabel, sizeof(_brightnessLabel), "Brightness: %u%%", bpct);
 
-    snprintf(_cartesianLabel, sizeof(_cartesianLabel), "Leg tol: %dcm",
-             (int)_ctx->config.cartesianTolerance);
+    snprintf(_cartesianLabel, sizeof(_cartesianLabel), "Leg tol: %dcm", (int)_ctx->config.cartesianTolerance);
 
     snprintf(_measureFromLabel, sizeof(_measureFromLabel), "Measure from: %s",
              _ctx->config.measureFromFront ? "Front" : "Back");
@@ -211,12 +210,12 @@ void MenuManager::buildMenu() {
     _settingsSub.addAction("<- Back", goToRoot);
 
     // ── Cartesian tolerance submenu ──────────────────────────────────────
-    _cartesianSub.addAction("4 cm",  setCartesianTolerance, 4);
-    _cartesianSub.addAction("5 cm",  setCartesianTolerance, 5);
-    _cartesianSub.addAction("6 cm",  setCartesianTolerance, 6);
-    _cartesianSub.addAction("7 cm",  setCartesianTolerance, 7);
-    _cartesianSub.addAction("8 cm",  setCartesianTolerance, 8);
-    _cartesianSub.addAction("9 cm",  setCartesianTolerance, 9);
+    _cartesianSub.addAction("4 cm", setCartesianTolerance, 4);
+    _cartesianSub.addAction("5 cm", setCartesianTolerance, 5);
+    _cartesianSub.addAction("6 cm", setCartesianTolerance, 6);
+    _cartesianSub.addAction("7 cm", setCartesianTolerance, 7);
+    _cartesianSub.addAction("8 cm", setCartesianTolerance, 8);
+    _cartesianSub.addAction("9 cm", setCartesianTolerance, 9);
     _cartesianSub.addAction("10 cm", setCartesianTolerance, 10);
     _cartesianSub.addAction("15 cm", setCartesianTolerance, 15);
     _cartesianSub.addAction("20 cm", setCartesianTolerance, 20);
@@ -449,7 +448,9 @@ void MenuManager::setMeasureFromBack(int) {
 }
 
 void MenuManager::setCartesianTolerance(int value) {
-    if (!s_instance) return;
+    if (!s_instance) {
+        return;
+    }
     s_instance->_ctx->config.cartesianTolerance = (float)value;
     s_instance->_ctx->legChecker.setTolerance((float)value);
     s_instance->_cfgMgr->saveConfig(s_instance->_ctx->config);

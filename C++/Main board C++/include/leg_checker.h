@@ -22,6 +22,18 @@ struct CartesianCoordinate {
     static CartesianCoordinate fromShot(const Shot &shot);
 };
 
+// Converts each shot's azimuth/inclination to a unit vector and checks that the angle between each pair
+// is within tolerance (degrees). Distance is ignored — works correctly near vertical.
+class AngularLegChecker : public ILegChecker {
+  public:
+    AngularLegChecker(float toleranceDeg);
+    void setTolerance(float toleranceDeg);
+    bool hasValidLeg(const Shot *shots, uint8_t count) const override;
+
+  private:
+    float toleranceRad_;
+};
+
 // Converts each shot to a Cartesian endpoint and checks that each endpoint is within tolerance of each other
 // endpoint. Handles steep legs correctly (unlike angular comparison, which breaks down near vertical where
 // azimuth becomes meaningless).

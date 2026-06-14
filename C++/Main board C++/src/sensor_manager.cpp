@@ -1,4 +1,5 @@
 #include "sensor_manager.h"
+#include "shot_vector.h"
 #include <cmath>
 
 // ── Initialisation ──────────────────────────────────────────────────
@@ -103,35 +104,16 @@ void SensorManager::pushStability(float az, float inc) {
     }
 }
 
-bool SensorManager::isStable(float tolerance) const {
+bool SensorManager::isStable(const ILegChecker &checker) const {
     if (stabCount_ < stabLen_) {
         return false;
     }
 
-    // Check all pairwise circular azimuth differences
+    Shot shots[MAX_STAB_BUF];
     for (uint8_t i = 0; i < stabCount_; i++) {
-        for (uint8_t j = i + 1; j < stabCount_; j++) {
-            if (circularDiff(azBuf_[i], azBuf_[j]) > tolerance) {
-                return false;
-            }
-        }
+        shots[i] = Shot(azBuf_[i], incBuf_[i], 1.0f);
     }
-
-    // Inclination is linear — simple range check
-    float incMin = incBuf_[0], incMax = incBuf_[0];
-    for (uint8_t i = 1; i < stabCount_; i++) {
-        if (incBuf_[i] < incMin) {
-            incMin = incBuf_[i];
-        }
-        if (incBuf_[i] > incMax) {
-            incMax = incBuf_[i];
-        }
-    }
-    if ((incMax - incMin) > tolerance) {
-        return false;
-    }
-
-    return true;
+    return checker.hasValidLeg(shots, stabCount_);
 }
 
 void SensorManager::resetStability() {

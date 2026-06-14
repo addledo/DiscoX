@@ -7,4 +7,7 @@ struct Shot {
 
     Shot() = default;
     Shot(float az, float inc, float dist) : azimuth(az), inclination(inc), distance(dist) {}
+
+    // Angular separation between two shot directions, in radians. Distance is ignored.
+    float angleTo(const Shot &other) const;
 };

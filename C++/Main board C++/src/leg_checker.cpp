@@ -30,6 +30,29 @@ CartesianCoordinate CartesianCoordinate::fromShot(const Shot &shot) {
     return CartesianCoordinate{x, y, z};
 }
 
+// ── AngularLegChecker ───────────────────────────────────────────────
+
+AngularLegChecker::AngularLegChecker(float toleranceDeg) : toleranceRad_(degreesToRadians(toleranceDeg)) {}
+
+void AngularLegChecker::setTolerance(float toleranceDeg) { toleranceRad_ = degreesToRadians(toleranceDeg); }
+
+bool AngularLegChecker::hasValidLeg(const Shot *shots, uint8_t count) const {
+    if (!shots || count == 0 || count > 8) {
+        return false;
+    }
+
+    for (int i = 0; i < count; i++) {
+        for (int j = i + 1; j < count; j++) {
+            if (shots[i].angleTo(shots[j]) > toleranceRad_) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// ── CartesianLegChecker ─────────────────────────────────────────────
+
 CartesianLegChecker::CartesianLegChecker(float toleranceCm) : toleranceM_(toleranceCm / 100.0f) {}
 
 void CartesianLegChecker::setTolerance(float toleranceCm) {
@@ -40,25 +63,18 @@ void CartesianLegChecker::setTolerance(float toleranceCm) {
 }
 
 bool CartesianLegChecker::hasValidLeg(const Shot *shots, uint8_t count) const {
-    if (!shots) {
+    if (!shots || count == 0 || count > 8) {
         return false;
     }
 
-    // Number of shots should always be 3.
-    if (count != 3) {
-        return false;
-    }
+    CartesianCoordinate endpoints[8];
 
-    CartesianCoordinate endpoints[3];
-
-    // Convert to co-ordinates
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < count; i++) {
         endpoints[i] = CartesianCoordinate::fromShot(shots[i]);
     }
 
-    // Check tolerances
-    for (int i = 0; i < 3; i++) {
-        for (int j = i + 1; j < 3; j++) {
+    for (int i = 0; i < count; i++) {
+        for (int j = i + 1; j < count; j++) {
             CartesianCoordinate a = endpoints[i];
             CartesianCoordinate b = endpoints[j];
 

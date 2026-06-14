@@ -1028,16 +1028,11 @@ static void pollMeasurement(uint32_t now) {
         measRedLedSet = true;
     }
 
-    // Wider stability tolerance for quick shots.
-    float stabTol;
-    if (ctx.quickShot) {
-        stabTol = Defaults::quickShotStabilityTol;
-    } else {
-        stabTol = ctx.config.stabilityTolerance;
-    }
+    const ILegChecker &stabChecker = ctx.quickShot
+                                         ? static_cast<const ILegChecker &>(ctx.quickShotStabilityChecker)
+                                         : ctx.stabilityChecker;
 
-
-    if (!sensorMgr.isStable(stabTol)) {
+    if (!sensorMgr.isStable(stabChecker)) {
         static uint32_t lastStabDbg = 0;
         uint32_t n = millis();
         if (n - lastStabDbg > 1000) {
@@ -1045,9 +1040,7 @@ static void pollMeasurement(uint32_t now) {
             Serial.print(F("MEAS: waiting stable  AZ="));
             Serial.print(sensorMgr.getAzimuth(), 1);
             Serial.print(F(" INC="));
-            Serial.print(sensorMgr.getInclination(), 1);
-            Serial.print(F(" tol="));
-            Serial.println(stabTol, 1);
+            Serial.println(sensorMgr.getInclination(), 1);
         }
         return;
     }
