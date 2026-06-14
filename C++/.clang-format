@@ -7,3 +7,4 @@ ColumnLimit: 110
 InsertBraces: true
 AllowShortBlocksOnASingleLine: Never
 AllowShortIfStatementsOnASingleLine: Never
+MaxEmptyLinesToKeep: 3
