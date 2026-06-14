@@ -27,6 +27,9 @@ jobs:
       - name: Install PlatformIO
         run: pip install platformio==6.1.19
 
+      - name: Run native unit tests
+        run: cd "C++/Main board C++" && pio test -e native
+
       - name: Build main board
         run: ./build.sh main
 
