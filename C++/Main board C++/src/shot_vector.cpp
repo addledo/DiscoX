@@ -1,10 +1,7 @@
 #include "shot_vector.h"
 
+#include "math_utils.h"
 #include <math.h>
-
-namespace {
-constexpr float DEG2RAD = 3.14159265358979f / 180.0f;
-} // namespace
 
 float Shot::angleTo(const Shot &other) const {
     float az1 = azimuth * DEG2RAD, inc1 = inclination * DEG2RAD;

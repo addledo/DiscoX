@@ -1,13 +1,8 @@
 #include "leg_checker.h"
 
 #include "config.h"
+#include "math_utils.h"
 #include <Arduino.h>
-
-namespace {
-constexpr float DEG2RAD = 3.14159265358979f / 180.0f;
-
-float degreesToRadians(float degrees) { return degrees * DEG2RAD; }
-} // namespace
 
 CartesianCoordinate::CartesianCoordinate(float x, float y, float z) : x(x), y(y), z(z) {}
 
