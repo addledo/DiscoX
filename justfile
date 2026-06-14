@@ -1,4 +1,4 @@
-build target:
+build target="main":
     ./build.sh {{target}}
 
 lsp:
