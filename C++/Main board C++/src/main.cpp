@@ -1537,11 +1537,8 @@ static void updateDisplay(uint32_t now) {
             liveAz = sensorMgr.getAzimuth();
             liveInc = sensorMgr.getInclination();
         } else {
-            liveAz = atan2f(lastMagY, lastMagX) * (180.0f / PI);
-            if (liveAz < 0) {
-                liveAz += 360.0f;
-            }
-            liveInc = atan2f(lastAccZ, sqrtf(lastAccX * lastAccX + lastAccY * lastAccY)) * (180.0f / PI);
+            liveAz = wrapTo360(radiansToDegrees(atan2f(lastMagY, lastMagX)));
+            liveInc = radiansToDegrees(atan2f(lastAccZ, sqrtf(lastAccX * lastAccX + lastAccY * lastAccY)));
         }
 
         // Gyro-gated freeze: only update displayed values when device is moving.
@@ -1574,21 +1571,7 @@ static void updateDisplay(uint32_t now) {
                 anchored = true;
             }
             // Clamp azimuth to anchor ±0.1° (circular)
-            float azDiff = liveAz - anchorAz;
-            if (azDiff > 180.0f) {
-                azDiff -= 360.0f;
-            }
-            if (azDiff < -180.0f) {
-                azDiff += 360.0f;
-            }
-            float clampedAz = anchorAz + fmaxf(-0.1f, fminf(0.1f, azDiff));
-            if (clampedAz < 0.0f) {
-                clampedAz += 360.0f;
-            }
-            if (clampedAz >= 360.0f) {
-                clampedAz -= 360.0f;
-            }
-            dispAz = clampedAz;
+            dispAz = wrapTo360(anchorAz + fmaxf(-0.1f, fminf(0.1f, wrapTo180(liveAz - anchorAz))));
             // Clamp inclination to anchor ±0.1°
             float incDiff = liveInc - anchorInc;
             dispInc = anchorInc + fmaxf(-0.1f, fminf(0.1f, incDiff));

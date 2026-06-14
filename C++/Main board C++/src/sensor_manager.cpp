@@ -76,22 +76,7 @@ void SensorManager::update(const Eigen::Vector3f &rawMag, const Eigen::Vector3f 
 // Handles 0/360 wraparound by working in the shortest-arc direction.
 
 float SensorManager::circularEma(float prev, float next, float alpha) {
-    float diff = next - prev;
-    // Wrap to [-180, 180]
-    if (diff > 180.0f) {
-        diff -= 360.0f;
-    }
-    if (diff < -180.0f) {
-        diff += 360.0f;
-    }
-    float result = prev + alpha * diff;
-    if (result < 0.0f) {
-        result += 360.0f;
-    }
-    if (result >= 360.0f) {
-        result -= 360.0f;
-    }
-    return result;
+    return wrapTo360(prev + alpha * wrapTo180(next - prev));
 }
 
 // ── Stability ring buffer ───────────────────────────────────────────
@@ -148,23 +133,9 @@ float SensorManager::medianAzimuth() const {
     float ref = medAzBuf_[0];
     float vals[MEDIAN_LEN];
     for (uint8_t i = 0; i < MEDIAN_LEN; i++) {
-        float d = medAzBuf_[i] - ref;
-        if (d > 180.0f) {
-            d -= 360.0f;
-        }
-        if (d < -180.0f) {
-            d += 360.0f;
-        }
-        vals[i] = ref + d;
+        vals[i] = ref + wrapTo180(medAzBuf_[i] - ref);
     }
-    float med = medianN(vals, MEDIAN_LEN);
-    if (med < 0.0f) {
-        med += 360.0f;
-    }
-    if (med >= 360.0f) {
-        med -= 360.0f;
-    }
-    return med;
+    return wrapTo360(medianN(vals, MEDIAN_LEN));
 }
 
 float SensorManager::medianN(float *vals, uint8_t n) {
