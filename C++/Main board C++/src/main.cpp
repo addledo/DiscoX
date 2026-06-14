@@ -1020,21 +1020,23 @@ static void pollMeasurement(uint32_t now) {
         // Ensure laser is on (only sends UART if it was off)
         if (!ctx.laserEnabled) {
             laser.setLaser(true);
-            delay(200);
+            delay(100);
             ctx.laserEnabled = true;
         }
         // Entry click buzzer
-        if (laserOk) {
-            laser.setBuzzer(true);
-            delay(100);
-            laser.setBuzzer(false);
-            delay(25);
-        }
+        laser.singleBeep();
         measRedLedSet = true;
     }
 
-    // Wait for stability — use wider tolerance for quick shot
-    float stabTol = ctx.quickShot ? Defaults::quickShotStabilityTol : ctx.config.stabilityTolerance;
+    // Wider stability tolerance for quick shots.
+    float stabTol;
+    if (ctx.quickShot) {
+        stabTol = Defaults::quickShotStabilityTol;
+    } else {
+        stabTol = ctx.config.stabilityTolerance;
+    }
+
+
     if (!sensorMgr.isStable(stabTol)) {
         static uint32_t lastStabDbg = 0;
         uint32_t n = millis();
