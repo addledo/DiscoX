@@ -77,7 +77,7 @@ struct DeviceContext {
     bool displayFrozen = false; // true = show frozen shot readings, not live
 
     // Leg-consistency buffer
-    CartesianLegChecker legChecker;
+    CartesianLegChecker legChecker{Defaults::cartesianTolerance};
     ShotBuffer shotBuf = ShotBuffer(legChecker);
 
     // (EMA state lives in SensorManager — complementary gravity filter + EMA smoothing)
