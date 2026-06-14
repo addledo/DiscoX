@@ -1201,7 +1201,7 @@ static void handleMeasurementSuccess() {
 
     Serial.println(F("  HS:3 leg buf"));
     Serial.flush();
-    ctx.shotBuf.push(ShotVector(ctx.readings.azimuth, ctx.readings.inclination, ctx.readings.distance));
+    ctx.shotBuf.push(Shot(ctx.readings.azimuth, ctx.readings.inclination, ctx.readings.distance));
 
     Serial.println(F("  HS:4 leg check"));
     Serial.flush();

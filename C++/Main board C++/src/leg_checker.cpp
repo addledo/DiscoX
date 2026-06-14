@@ -18,7 +18,7 @@ float CartesianCoordinate::distanceTo(const CartesianCoordinate &other) const {
     return sqrtf((dx * dx) + (dy * dy) + (dz * dz));
 }
 
-CartesianCoordinate CartesianCoordinate::fromShot(const ShotVector &shot) {
+CartesianCoordinate CartesianCoordinate::fromShot(const Shot &shot) {
     float azimuth = degreesToRadians(shot.azimuth);
     float inclination = degreesToRadians(shot.inclination);
     float horiz = shot.distance * cosf(inclination);
@@ -39,7 +39,7 @@ void CartesianLegChecker::setTolerance(float toleranceCm) {
     toleranceM_ = toleranceCm / 100.0f;
 }
 
-bool CartesianLegChecker::hasValidLeg(const ShotVector *shots, uint8_t count) const {
+bool CartesianLegChecker::hasValidLeg(const Shot *shots, uint8_t count) const {
     if (!shots) {
         return false;
     }
