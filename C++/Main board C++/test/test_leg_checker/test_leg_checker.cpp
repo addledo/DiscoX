@@ -1,3 +1,7 @@
+// Critical boundary values computed by test/verify_test_values.py using
+// numpy/scipy (independent of this C++ implementation).
+// Each inside/outside pair is ±0.5% of the exact critical delta.
+
 #include "leg_checker.h"
 #include <unity.h>
 
@@ -7,248 +11,239 @@ void tearDown() {}
 // ── CartesianCoordinate::fromShot ────────────────────────────────────
 
 void test_fromShot_north() {
-    // az=0°, inc=0°, 10m → (0, 10, 0)
     CartesianCoordinate c = CartesianCoordinate::fromShot({0.0f, 0.0f, 10.0f});
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, c.x);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f,  c.x);
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 10.0f, c.y);
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, c.z);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f,  c.z);
 }
 
 void test_fromShot_east() {
-    // az=90°, inc=0°, 10m → (10, 0, 0)
     CartesianCoordinate c = CartesianCoordinate::fromShot({90.0f, 0.0f, 10.0f});
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 10.0f, c.x);
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, c.y);
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, c.z);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f,  c.y);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f,  c.z);
 }
 
 void test_fromShot_vertical_up() {
-    // az=any, inc=90°, 10m → (0, 0, 10)
     CartesianCoordinate c = CartesianCoordinate::fromShot({0.0f, 90.0f, 10.0f});
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, c.x);
-    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, c.y);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f,  c.x);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f,  c.y);
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 10.0f, c.z);
 }
 
-// ── CartesianLegChecker ──────────────────────────────────────────────
+// ── CartesianLegChecker — guards ─────────────────────────────────────
 
-void test_cartesian_null_false() {
-    CartesianLegChecker checker(10.0f);
-    TEST_ASSERT_FALSE(checker.hasValidLeg(nullptr, 1));
+void test_cart_null_false()           { CartesianLegChecker c(10.0f); TEST_ASSERT_FALSE(c.hasValidLeg(nullptr, 1)); }
+void test_cart_zero_count_false()     { CartesianLegChecker c(10.0f); Shot s[] = {{0,0,5}}; TEST_ASSERT_FALSE(c.hasValidLeg(s,  0)); }
+void test_cart_negative_count_false() { CartesianLegChecker c(10.0f); Shot s[] = {{0,0,5}}; TEST_ASSERT_FALSE(c.hasValidLeg(s, -1)); }
+void test_cart_count_too_large_false(){ CartesianLegChecker c(10.0f); Shot s[9]={};          TEST_ASSERT_FALSE(c.hasValidLeg(s,  9)); }
+void test_cart_single_shot_true()     { CartesianLegChecker c(10.0f); Shot s[] = {{45,30,5}};TEST_ASSERT_TRUE(c.hasValidLeg(s,  1)); }
+
+// ── CartesianLegChecker — tol=0: only identical shots pass ──────────
+
+void test_cart_tol0_identical_true() {
+    CartesianLegChecker c(0.0f);
+    Shot s[] = {{45.0f, 20.0f, 10.0f}, {45.0f, 20.0f, 10.0f}};
+    TEST_ASSERT_TRUE(c.hasValidLeg(s, 2));
 }
 
-void test_cartesian_zero_count_false() {
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 0));
+void test_cart_tol0_any_difference_false() {
+    CartesianLegChecker c(0.0f);
+    Shot s[] = {{0.0f, 0.0f, 5.0f}, {0.001f, 0.0f, 5.0f}};
+    TEST_ASSERT_FALSE(c.hasValidLeg(s, 2));
 }
 
-void test_cartesian_negative_count_false() {
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, -1));
+// ── CartesianLegChecker — dist=0: all shots at origin, always pass ──
+
+void test_cart_dist0_any_angle_true() {
+    CartesianLegChecker c(5.0f);
+    Shot s[] = {{0.0f, 0.0f, 0.0f}, {45.0f, 45.0f, 0.0f}, {180.0f, -30.0f, 0.0f}};
+    TEST_ASSERT_TRUE(c.hasValidLeg(s, 3));
 }
 
-void test_cartesian_count_too_large_false() {
-    CartesianLegChecker checker(10.0f);
-    Shot shots[9] = {};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 9));
+// ── CartesianLegChecker — tol=5cm ────────────────────────────────────
+// Critical deltas from verify_test_values.py (inside=0.995×crit, outside=1.005×crit)
+
+void test_cart_tol5_dist5_az_inside()    { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{0.570095f,0.0f,5.0f}};   TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist5_az_outside()   { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{0.575825f,0.0f,5.0f}};   TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist5_inc_inside()   { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,0.570095f,5.0f}};   TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist5_inc_outside()  { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,0.575825f,5.0f}};   TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist5_diag_inside()  { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{0.403120f,0.403120f,5.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist5_diag_outside() { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{0.407171f,0.407171f,5.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+void test_cart_tol5_dist10_az_inside()   { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,10.0f},{0.285047f,0.0f,10.0f}};  TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist10_az_outside()  { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,10.0f},{0.287912f,0.0f,10.0f}};  TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist10_inc_inside()  { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,10.0f},{0.0f,0.285047f,10.0f}};  TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist10_inc_outside() { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,10.0f},{0.0f,0.287912f,10.0f}};  TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist10_diag_inside() { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,10.0f},{0.201559f,0.201559f,10.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist10_diag_outside(){ CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,10.0f},{0.203584f,0.203584f,10.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+void test_cart_tol5_dist100_az_inside()  { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,100.0f},{0.028505f,0.0f,100.0f}}; TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist100_az_outside() { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,100.0f},{0.028791f,0.0f,100.0f}}; TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist100_inc_inside() { CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,100.0f},{0.0f,0.028505f,100.0f}}; TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist100_inc_outside(){ CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,100.0f},{0.0f,0.028791f,100.0f}}; TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist100_diag_inside(){ CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,100.0f},{0.020156f,0.020156f,100.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol5_dist100_diag_outside(){CartesianLegChecker c(5.0f);  Shot s[] = {{0.0f,0.0f,100.0f},{0.020358f,0.020358f,100.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+// ── CartesianLegChecker — tol=10cm ───────────────────────────────────
+
+void test_cart_tol10_dist5_az_inside()   { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{1.140205f,0.0f,5.0f}};    TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist5_az_outside()  { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{1.151664f,0.0f,5.0f}};    TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist5_inc_inside()  { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,1.140205f,5.0f}};    TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist5_inc_outside() { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,1.151664f,5.0f}};    TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist5_diag_inside() { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{0.806260f,0.806260f,5.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist5_diag_outside(){ CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{0.814363f,0.814363f,5.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+void test_cart_tol10_dist10_az_inside()  { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,10.0f},{0.570095f,0.0f,10.0f}};  TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist10_az_outside() { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,10.0f},{0.575825f,0.0f,10.0f}};  TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist10_inc_inside() { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,10.0f},{0.0f,0.570095f,10.0f}};  TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist10_inc_outside(){ CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,10.0f},{0.0f,0.575825f,10.0f}};  TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist10_diag_inside(){ CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,10.0f},{0.403120f,0.403120f,10.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist10_diag_outside(){CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,10.0f},{0.407171f,0.407171f,10.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+void test_cart_tol10_dist100_az_inside() { CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.057009f,0.0f,100.0f}}; TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist100_az_outside(){ CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.057582f,0.0f,100.0f}}; TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist100_inc_inside(){ CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.0f,0.057009f,100.0f}}; TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist100_inc_outside(){CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.0f,0.057582f,100.0f}}; TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist100_diag_inside(){CartesianLegChecker c(10.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.040312f,0.040312f,100.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol10_dist100_diag_outside(){CartesianLegChecker c(10.0f);Shot s[] = {{0.0f,0.0f,100.0f},{0.040717f,0.040717f,100.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+// ── CartesianLegChecker — tol=30cm ───────────────────────────────────
+
+void test_cart_tol30_dist5_az_inside()   { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,5.0f},{3.421071f,0.0f,5.0f}};    TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist5_az_outside()  { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,5.0f},{3.455454f,0.0f,5.0f}};    TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist5_inc_inside()  { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,3.421071f,5.0f}};    TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist5_inc_outside() { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,3.455454f,5.0f}};    TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist5_diag_inside() { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,5.0f},{2.419426f,2.419426f,5.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist5_diag_outside(){ CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,5.0f},{2.443742f,2.443742f,5.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+void test_cart_tol30_dist10_az_inside()  { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,10.0f},{1.710343f,0.0f,10.0f}};  TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist10_az_outside() { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,10.0f},{1.727533f,0.0f,10.0f}};  TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist10_inc_inside() { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,10.0f},{0.0f,1.710343f,10.0f}};  TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist10_inc_outside(){ CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,10.0f},{0.0f,1.727533f,10.0f}};  TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist10_diag_inside(){ CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,10.0f},{1.209441f,1.209441f,10.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist10_diag_outside(){CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,10.0f},{1.221596f,1.221596f,10.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+void test_cart_tol30_dist100_az_inside() { CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.171028f,0.0f,100.0f}}; TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist100_az_outside(){ CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.172747f,0.0f,100.0f}}; TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist100_inc_inside(){ CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.0f,0.171028f,100.0f}}; TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist100_inc_outside(){CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.0f,0.172747f,100.0f}}; TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist100_diag_inside(){CartesianLegChecker c(30.0f); Shot s[] = {{0.0f,0.0f,100.0f},{0.120935f,0.120935f,100.0f}};TEST_ASSERT_TRUE (c.hasValidLeg(s,2)); }
+void test_cart_tol30_dist100_diag_outside(){CartesianLegChecker c(30.0f);Shot s[] = {{0.0f,0.0f,100.0f},{0.122151f,0.122151f,100.0f}};TEST_ASSERT_FALSE(c.hasValidLeg(s,2)); }
+
+// ── CartesianLegChecker — setTolerance ───────────────────────────────
+
+void test_cart_setTolerance_updates() {
+    CartesianLegChecker c(30.0f);
+    Shot s[] = {{0.0f, 0.0f, 10.0f}, {1.710343f, 0.0f, 10.0f}}; // ~29.85cm
+    TEST_ASSERT_TRUE(c.hasValidLeg(s, 2));
+    c.setTolerance(10.0f);
+    TEST_ASSERT_FALSE(c.hasValidLeg(s, 2));
 }
 
-void test_cartesian_single_shot_true() {
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{45.0f, 30.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 1));
+void test_cart_setTolerance_invalid_ignored() {
+    CartesianLegChecker c(10.0f);
+    c.setTolerance(0.0f); // below 1cm minimum — old tolerance kept
+    Shot s[] = {{0.0f, 0.0f, 10.0f}, {0.570095f, 0.0f, 10.0f}}; // ~9.95cm
+    TEST_ASSERT_TRUE(c.hasValidLeg(s, 2));
 }
 
-void test_cartesian_identical_shots_true() {
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{45.0f, 30.0f, 5.0f}, {45.0f, 30.0f, 5.0f}, {45.0f, 30.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 3));
+// ── CartesianLegChecker — near-vertical, wrap-around ─────────────────
+
+void test_cart_near_vertical_az4_az356() {
+    // inc=89°: az=4° and az=356° are 8° apart as scalars but endpoints only ~2.4cm apart
+    CartesianLegChecker c(5.0f);
+    Shot s[] = {{4.0f, 89.0f, 10.0f}, {356.0f, 89.0f, 10.0f}};
+    TEST_ASSERT_TRUE(c.hasValidLeg(s, 2));
 }
 
-void test_cartesian_within_tolerance_true() {
-    // az=0° and az=1°, flat, 5m → endpoints ~8.7cm apart
-    CartesianLegChecker checker(10.0f); // 10cm
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}, {1.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
+void test_cart_az1_az359_wrap() {
+    // 1° and 359° are 2° apart — endpoints ~17.5cm apart at 5m
+    CartesianLegChecker c(20.0f);
+    Shot s[] = {{1.0f, 0.0f, 5.0f}, {359.0f, 0.0f, 5.0f}};
+    TEST_ASSERT_TRUE(c.hasValidLeg(s, 2));
 }
 
-void test_cartesian_exceeds_tolerance_false() {
-    // az=0° and az=1°, flat, 5m → ~8.7cm apart, fails at 5cm tolerance
-    CartesianLegChecker checker(5.0f); // 5cm
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}, {1.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 2));
+// ── AngularLegChecker — guards ────────────────────────────────────────
+
+void test_ang_null_false()            { AngularLegChecker a(1.7f); TEST_ASSERT_FALSE(a.hasValidLeg(nullptr, 1)); }
+void test_ang_zero_count_false()      { AngularLegChecker a(1.7f); Shot s[] = {{0,0,5}}; TEST_ASSERT_FALSE(a.hasValidLeg(s,  0)); }
+void test_ang_negative_count_false()  { AngularLegChecker a(1.7f); Shot s[] = {{0,0,5}}; TEST_ASSERT_FALSE(a.hasValidLeg(s, -1)); }
+void test_ang_count_too_large_false() { AngularLegChecker a(1.7f); Shot s[9]={};         TEST_ASSERT_FALSE(a.hasValidLeg(s,  9)); }
+void test_ang_single_shot_true()      { AngularLegChecker a(1.7f); Shot s[] = {{45,30,5}};TEST_ASSERT_TRUE(a.hasValidLeg(s,  1)); }
+
+// ── AngularLegChecker — tol=0°: only identical shots pass ────────────
+
+void test_ang_tol0_identical_true() {
+    // Use az=0°, inc=0°: sin/cos are exact in float32, dot product is exactly 1.0
+    AngularLegChecker a(0.0f);
+    Shot s[] = {{0.0f, 0.0f, 5.0f}, {0.0f, 0.0f, 5.0f}};
+    TEST_ASSERT_TRUE(a.hasValidLeg(s, 2));
 }
 
-void test_cartesian_vertical_same_direction_true() {
-    // Both straight up — azimuth irrelevant, endpoints identical
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{0.0f, 90.0f, 5.0f}, {180.0f, 90.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
+void test_ang_tol0_any_difference_false() {
+    // 1° is large enough to be detectable in float32 (0.001° is not)
+    AngularLegChecker a(0.0f);
+    Shot s[] = {{0.0f, 0.0f, 5.0f}, {1.0f, 0.0f, 5.0f}};
+    TEST_ASSERT_FALSE(a.hasValidLeg(s, 2));
 }
 
-void test_cartesian_setTolerance_reduces_passing_to_failing() {
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}, {1.0f, 0.0f, 5.0f}}; // ~8.7cm apart
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-    checker.setTolerance(5.0f);
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 2));
+// ── AngularLegChecker — tol=1.7° ─────────────────────────────────────
+// For az/inc single-axis: critical delta == tolerance exactly.
+// For diag: critical delta = 1.20212563° (arccos(sqrt(cos(1.7°)))).
+
+void test_ang_tol17_az_inside()    { AngularLegChecker a(1.7f); Shot s[] = {{0.0f,0.0f,5.0f},{1.691500f,0.0f,5.0f}};            TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol17_az_outside()   { AngularLegChecker a(1.7f); Shot s[] = {{0.0f,0.0f,5.0f},{1.708500f,0.0f,5.0f}};            TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+void test_ang_tol17_inc_inside()   { AngularLegChecker a(1.7f); Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,1.691500f,5.0f}};            TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol17_inc_outside()  { AngularLegChecker a(1.7f); Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,1.708500f,5.0f}};            TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+void test_ang_tol17_diag_inside()  { AngularLegChecker a(1.7f); Shot s[] = {{0.0f,0.0f,5.0f},{1.196115f,1.196115f,5.0f}};       TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol17_diag_outside() { AngularLegChecker a(1.7f); Shot s[] = {{0.0f,0.0f,5.0f},{1.208136f,1.208136f,5.0f}};       TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+
+// ── AngularLegChecker — tol=5° ───────────────────────────────────────
+
+void test_ang_tol5_az_inside()     { AngularLegChecker a(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{4.975000f,0.0f,5.0f}};           TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol5_az_outside()    { AngularLegChecker a(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{5.025000f,0.0f,5.0f}};           TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+void test_ang_tol5_inc_inside()    { AngularLegChecker a(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,4.975000f,5.0f}};           TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol5_inc_outside()   { AngularLegChecker a(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,5.025000f,5.0f}};           TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+void test_ang_tol5_diag_inside()   { AngularLegChecker a(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{3.518974f,3.518974f,5.0f}};      TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol5_diag_outside()  { AngularLegChecker a(5.0f);  Shot s[] = {{0.0f,0.0f,5.0f},{3.554341f,3.554341f,5.0f}};      TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+
+// ── AngularLegChecker — tol=10° ──────────────────────────────────────
+
+void test_ang_tol10_az_inside()    { AngularLegChecker a(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{9.950000f,0.0f,5.0f}};           TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol10_az_outside()   { AngularLegChecker a(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{10.050000f,0.0f,5.0f}};          TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+void test_ang_tol10_inc_inside()   { AngularLegChecker a(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,9.950000f,5.0f}};           TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol10_inc_outside()  { AngularLegChecker a(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{0.0f,10.050000f,5.0f}};          TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+void test_ang_tol10_diag_inside()  { AngularLegChecker a(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{7.044701f,7.044701f,5.0f}};      TEST_ASSERT_TRUE (a.hasValidLeg(s,2)); }
+void test_ang_tol10_diag_outside() { AngularLegChecker a(10.0f); Shot s[] = {{0.0f,0.0f,5.0f},{7.115502f,7.115502f,5.0f}};      TEST_ASSERT_FALSE(a.hasValidLeg(s,2)); }
+
+// ── AngularLegChecker — distance independence ─────────────────────────
+
+void test_ang_distance_irrelevant() {
+    // Same angle, different distances — all pass
+    AngularLegChecker a(1.7f);
+    Shot s0[]   = {{0.0f,0.0f,0.0f},   {1.691500f,0.0f,0.0f}};
+    Shot s5[]   = {{0.0f,0.0f,5.0f},   {1.691500f,0.0f,5.0f}};
+    Shot s100[] = {{0.0f,0.0f,100.0f}, {1.691500f,0.0f,100.0f}};
+    TEST_ASSERT_TRUE(a.hasValidLeg(s0,   2));
+    TEST_ASSERT_TRUE(a.hasValidLeg(s5,   2));
+    TEST_ASSERT_TRUE(a.hasValidLeg(s100, 2));
 }
 
-void test_cartesian_setTolerance_invalid_ignored() {
-    // 0.0f is below the 1cm minimum — old tolerance kept
-    CartesianLegChecker checker(10.0f);
-    checker.setTolerance(0.0f);
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}, {1.0f, 0.0f, 5.0f}}; // ~8.7cm apart
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
+// ── AngularLegChecker — near-vertical, wrap-around ───────────────────
+
+void test_ang_near_vertical_az4_az356() {
+    // inc=89°: dot-product gives ~0.14° — correctly accepts unlike naive az comparison
+    AngularLegChecker a(1.7f);
+    Shot s[] = {{4.0f, 89.0f, 10.0f}, {356.0f, 89.0f, 10.0f}};
+    TEST_ASSERT_TRUE(a.hasValidLeg(s, 2));
 }
 
-// ── AngularLegChecker ────────────────────────────────────────────────
-
-void test_angular_null_false() {
-    AngularLegChecker checker(1.7f);
-    TEST_ASSERT_FALSE(checker.hasValidLeg(nullptr, 1));
-}
-
-void test_angular_zero_count_false() {
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 0));
-}
-
-void test_angular_negative_count_false() {
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, -1));
-}
-
-void test_angular_count_too_large_false() {
-    AngularLegChecker checker(1.7f);
-    Shot shots[9] = {};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 9));
-}
-
-void test_angular_single_shot_true() {
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{45.0f, 30.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 1));
-}
-
-void test_angular_identical_shots_true() {
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{45.0f, 30.0f, 5.0f}, {45.0f, 30.0f, 5.0f}, {45.0f, 30.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 3));
-}
-
-void test_angular_within_tolerance_true() {
-    // 1° apart, flat → angle ≈ 1° < 1.7°
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}, {1.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-void test_angular_exceeds_tolerance_false() {
-    // 2° apart, flat → angle ≈ 2° > 1.7°
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{0.0f, 0.0f, 5.0f}, {2.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 2));
-}
-
-void test_angular_vertical_same_direction_true() {
-    // Both pointing straight up — dot product = 1 regardless of azimuth
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{0.0f, 90.0f, 5.0f}, {270.0f, 90.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-void test_angular_wraps_around_zero() {
-    // 1° and 359° are 2° apart, not 358° — passes with 3° tolerance
-    AngularLegChecker checker(3.0f);
-    Shot shots[] = {{1.0f, 0.0f, 5.0f}, {359.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-void test_cartesian_near_vertical_wraps_around_zero() {
-    // inc=89° (near-vertical, not exactly vertical): az=4° and az=356° are 8° apart
-    // as scalars but the endpoints are only ~2.4cm apart. Cartesian handles this correctly.
-    CartesianLegChecker checker(5.0f);
-    Shot shots[] = {{4.0f, 89.0f, 10.0f}, {356.0f, 89.0f, 10.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-void test_angular_near_vertical_wraps_around_zero() {
-    // Same near-vertical case: dot-product gives ~0.08° separation, well within 1.7°.
-    // A naive azimuth comparison would give 352° and incorrectly reject these.
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{4.0f, 89.0f, 10.0f}, {356.0f, 89.0f, 10.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-void test_cartesian_wraps_around_zero() {
-    // 1° and 359° at 5m → endpoints ~17.5cm apart, passes with 20cm tolerance
-    CartesianLegChecker checker(20.0f);
-    Shot shots[] = {{1.0f, 0.0f, 5.0f}, {359.0f, 0.0f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-// ── Diagonal shots (az and inc both non-zero) ────────────────────────
-
-void test_angular_diagonal_within_tolerance_true() {
-    // 1° az + 0.5° inc → ~0.96° combined angular separation, within 1.7°
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{45.0f, 20.0f, 5.0f}, {46.0f, 20.5f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-void test_angular_diagonal_exceeds_tolerance_false() {
-    // 1.5° in az + 1.5° in inc → ~2° combined angular separation, exceeds 1.7°
-    // (Note: at inc=20°, azimuth differences are NOT compressed much by cos(inc),
-    //  so the combined separation here is genuinely > 1.7°)
-    AngularLegChecker checker(1.7f);
-    Shot shots[] = {{45.0f, 20.0f, 5.0f}, {46.5f, 21.5f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 2));
-}
-
-void test_cartesian_diagonal_within_tolerance_true() {
-    // Same shots as angular within test: endpoints ~9.3cm apart, passes at 10cm
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{45.0f, 20.0f, 5.0f}, {46.0f, 20.5f, 5.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-void test_cartesian_diagonal_exceeds_tolerance_false() {
-    // Same shots as angular exceeds test: endpoints ~17.9cm apart, fails at 10cm
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{45.0f, 20.0f, 5.0f}, {46.5f, 21.5f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots, 2));
-}
-
-// ── Long distances ───────────────────────────────────────────────────
-
-void test_cartesian_long_distance_within_tolerance_true() {
-    // 0.05° apart at 100m → ~8.7cm endpoint separation, passes at 10cm
-    CartesianLegChecker checker(10.0f);
-    Shot shots[] = {{0.0f, 0.0f, 100.0f}, {0.05f, 0.0f, 100.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots, 2));
-}
-
-void test_cartesian_long_distance_exceeds_tolerance_false() {
-    // 0.1° at 100m → ~17.5cm, fails at 10cm; same 0.1° at 5m → ~0.87cm, passes
-    CartesianLegChecker checker(10.0f);
-    Shot shots_long[]  = {{0.0f, 0.0f, 100.0f}, {0.1f, 0.0f, 100.0f}};
-    Shot shots_short[] = {{0.0f, 0.0f, 5.0f},   {0.1f, 0.0f, 5.0f}};
-    TEST_ASSERT_FALSE(checker.hasValidLeg(shots_long, 2));
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots_short, 2));
-}
-
-void test_angular_long_distance_same_result() {
-    // Angular ignores distance — same angle passes regardless of leg length
-    AngularLegChecker checker(1.7f);
-    Shot shots_long[]  = {{0.0f, 0.0f, 100.0f}, {1.0f, 0.0f, 100.0f}};
-    Shot shots_short[] = {{0.0f, 0.0f, 1.0f},   {1.0f, 0.0f, 1.0f}};
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots_long, 2));
-    TEST_ASSERT_TRUE(checker.hasValidLeg(shots_short, 2));
+void test_ang_az1_az359_wrap() {
+    // 1° and 359° → 2° angular separation, passes at 3° tolerance
+    AngularLegChecker a(3.0f);
+    Shot s[] = {{1.0f, 0.0f, 5.0f}, {359.0f, 0.0f, 5.0f}};
+    TEST_ASSERT_TRUE(a.hasValidLeg(s, 2));
 }
 
 int main() {
@@ -258,40 +253,81 @@ int main() {
     RUN_TEST(test_fromShot_east);
     RUN_TEST(test_fromShot_vertical_up);
 
-    RUN_TEST(test_cartesian_null_false);
-    RUN_TEST(test_cartesian_zero_count_false);
-    RUN_TEST(test_cartesian_negative_count_false);
-    RUN_TEST(test_cartesian_count_too_large_false);
-    RUN_TEST(test_cartesian_single_shot_true);
-    RUN_TEST(test_cartesian_identical_shots_true);
-    RUN_TEST(test_cartesian_within_tolerance_true);
-    RUN_TEST(test_cartesian_exceeds_tolerance_false);
-    RUN_TEST(test_cartesian_vertical_same_direction_true);
-    RUN_TEST(test_cartesian_setTolerance_reduces_passing_to_failing);
-    RUN_TEST(test_cartesian_setTolerance_invalid_ignored);
+    RUN_TEST(test_cart_null_false);
+    RUN_TEST(test_cart_zero_count_false);
+    RUN_TEST(test_cart_negative_count_false);
+    RUN_TEST(test_cart_count_too_large_false);
+    RUN_TEST(test_cart_single_shot_true);
 
-    RUN_TEST(test_angular_null_false);
-    RUN_TEST(test_angular_zero_count_false);
-    RUN_TEST(test_angular_negative_count_false);
-    RUN_TEST(test_angular_count_too_large_false);
-    RUN_TEST(test_angular_single_shot_true);
-    RUN_TEST(test_angular_identical_shots_true);
-    RUN_TEST(test_angular_within_tolerance_true);
-    RUN_TEST(test_angular_exceeds_tolerance_false);
-    RUN_TEST(test_angular_vertical_same_direction_true);
-    RUN_TEST(test_cartesian_near_vertical_wraps_around_zero);
-    RUN_TEST(test_angular_near_vertical_wraps_around_zero);
-    RUN_TEST(test_angular_wraps_around_zero);
-    RUN_TEST(test_cartesian_wraps_around_zero);
+    RUN_TEST(test_cart_tol0_identical_true);
+    RUN_TEST(test_cart_tol0_any_difference_false);
+    RUN_TEST(test_cart_dist0_any_angle_true);
 
-    RUN_TEST(test_angular_diagonal_within_tolerance_true);
-    RUN_TEST(test_angular_diagonal_exceeds_tolerance_false);
-    RUN_TEST(test_cartesian_diagonal_within_tolerance_true);
-    RUN_TEST(test_cartesian_diagonal_exceeds_tolerance_false);
+    RUN_TEST(test_cart_tol5_dist5_az_inside);   RUN_TEST(test_cart_tol5_dist5_az_outside);
+    RUN_TEST(test_cart_tol5_dist5_inc_inside);  RUN_TEST(test_cart_tol5_dist5_inc_outside);
+    RUN_TEST(test_cart_tol5_dist5_diag_inside); RUN_TEST(test_cart_tol5_dist5_diag_outside);
 
-    RUN_TEST(test_cartesian_long_distance_within_tolerance_true);
-    RUN_TEST(test_cartesian_long_distance_exceeds_tolerance_false);
-    RUN_TEST(test_angular_long_distance_same_result);
+    RUN_TEST(test_cart_tol5_dist10_az_inside);   RUN_TEST(test_cart_tol5_dist10_az_outside);
+    RUN_TEST(test_cart_tol5_dist10_inc_inside);  RUN_TEST(test_cart_tol5_dist10_inc_outside);
+    RUN_TEST(test_cart_tol5_dist10_diag_inside); RUN_TEST(test_cart_tol5_dist10_diag_outside);
+
+    RUN_TEST(test_cart_tol5_dist100_az_inside);   RUN_TEST(test_cart_tol5_dist100_az_outside);
+    RUN_TEST(test_cart_tol5_dist100_inc_inside);  RUN_TEST(test_cart_tol5_dist100_inc_outside);
+    RUN_TEST(test_cart_tol5_dist100_diag_inside); RUN_TEST(test_cart_tol5_dist100_diag_outside);
+
+    RUN_TEST(test_cart_tol10_dist5_az_inside);   RUN_TEST(test_cart_tol10_dist5_az_outside);
+    RUN_TEST(test_cart_tol10_dist5_inc_inside);  RUN_TEST(test_cart_tol10_dist5_inc_outside);
+    RUN_TEST(test_cart_tol10_dist5_diag_inside); RUN_TEST(test_cart_tol10_dist5_diag_outside);
+
+    RUN_TEST(test_cart_tol10_dist10_az_inside);   RUN_TEST(test_cart_tol10_dist10_az_outside);
+    RUN_TEST(test_cart_tol10_dist10_inc_inside);  RUN_TEST(test_cart_tol10_dist10_inc_outside);
+    RUN_TEST(test_cart_tol10_dist10_diag_inside); RUN_TEST(test_cart_tol10_dist10_diag_outside);
+
+    RUN_TEST(test_cart_tol10_dist100_az_inside);   RUN_TEST(test_cart_tol10_dist100_az_outside);
+    RUN_TEST(test_cart_tol10_dist100_inc_inside);  RUN_TEST(test_cart_tol10_dist100_inc_outside);
+    RUN_TEST(test_cart_tol10_dist100_diag_inside); RUN_TEST(test_cart_tol10_dist100_diag_outside);
+
+    RUN_TEST(test_cart_tol30_dist5_az_inside);   RUN_TEST(test_cart_tol30_dist5_az_outside);
+    RUN_TEST(test_cart_tol30_dist5_inc_inside);  RUN_TEST(test_cart_tol30_dist5_inc_outside);
+    RUN_TEST(test_cart_tol30_dist5_diag_inside); RUN_TEST(test_cart_tol30_dist5_diag_outside);
+
+    RUN_TEST(test_cart_tol30_dist10_az_inside);   RUN_TEST(test_cart_tol30_dist10_az_outside);
+    RUN_TEST(test_cart_tol30_dist10_inc_inside);  RUN_TEST(test_cart_tol30_dist10_inc_outside);
+    RUN_TEST(test_cart_tol30_dist10_diag_inside); RUN_TEST(test_cart_tol30_dist10_diag_outside);
+
+    RUN_TEST(test_cart_tol30_dist100_az_inside);   RUN_TEST(test_cart_tol30_dist100_az_outside);
+    RUN_TEST(test_cart_tol30_dist100_inc_inside);  RUN_TEST(test_cart_tol30_dist100_inc_outside);
+    RUN_TEST(test_cart_tol30_dist100_diag_inside); RUN_TEST(test_cart_tol30_dist100_diag_outside);
+
+    RUN_TEST(test_cart_setTolerance_updates);
+    RUN_TEST(test_cart_setTolerance_invalid_ignored);
+    RUN_TEST(test_cart_near_vertical_az4_az356);
+    RUN_TEST(test_cart_az1_az359_wrap);
+
+    RUN_TEST(test_ang_null_false);
+    RUN_TEST(test_ang_zero_count_false);
+    RUN_TEST(test_ang_negative_count_false);
+    RUN_TEST(test_ang_count_too_large_false);
+    RUN_TEST(test_ang_single_shot_true);
+
+    RUN_TEST(test_ang_tol0_identical_true);
+    RUN_TEST(test_ang_tol0_any_difference_false);
+
+    RUN_TEST(test_ang_tol17_az_inside);   RUN_TEST(test_ang_tol17_az_outside);
+    RUN_TEST(test_ang_tol17_inc_inside);  RUN_TEST(test_ang_tol17_inc_outside);
+    RUN_TEST(test_ang_tol17_diag_inside); RUN_TEST(test_ang_tol17_diag_outside);
+
+    RUN_TEST(test_ang_tol5_az_inside);   RUN_TEST(test_ang_tol5_az_outside);
+    RUN_TEST(test_ang_tol5_inc_inside);  RUN_TEST(test_ang_tol5_inc_outside);
+    RUN_TEST(test_ang_tol5_diag_inside); RUN_TEST(test_ang_tol5_diag_outside);
+
+    RUN_TEST(test_ang_tol10_az_inside);   RUN_TEST(test_ang_tol10_az_outside);
+    RUN_TEST(test_ang_tol10_inc_inside);  RUN_TEST(test_ang_tol10_inc_outside);
+    RUN_TEST(test_ang_tol10_diag_inside); RUN_TEST(test_ang_tol10_diag_outside);
+
+    RUN_TEST(test_ang_distance_irrelevant);
+    RUN_TEST(test_ang_near_vertical_az4_az356);
+    RUN_TEST(test_ang_az1_az359_wrap);
 
     return UNITY_END();
 }
