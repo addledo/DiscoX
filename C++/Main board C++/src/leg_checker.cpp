@@ -27,9 +27,15 @@ CartesianCoordinate CartesianCoordinate::fromShot(const Shot &shot) {
 
 // ── AngularLegChecker ───────────────────────────────────────────────
 
+// Constructor only used to set the default on startup
 AngularLegChecker::AngularLegChecker(float toleranceDeg) : toleranceRad_(degreesToRadians(toleranceDeg)) {}
 
-void AngularLegChecker::setTolerance(float toleranceDeg) { toleranceRad_ = degreesToRadians(toleranceDeg); }
+void AngularLegChecker::setTolerance(float toleranceDeg) {
+    // Keep existing setting if number passed in is invalid.
+    if (toleranceDeg > 0.1 && isfinite(toleranceDeg)) {
+        toleranceRad_ = degreesToRadians(toleranceDeg);
+    }
+}
 
 bool AngularLegChecker::hasValidLeg(const Shot *shots, int count) const {
     if (!shots || count <= 0 || count > 8) {
@@ -48,6 +54,7 @@ bool AngularLegChecker::hasValidLeg(const Shot *shots, int count) const {
 
 // ── CartesianLegChecker ─────────────────────────────────────────────
 
+// Constructor only used to set the default on startup
 CartesianLegChecker::CartesianLegChecker(float toleranceCm) : toleranceM_(toleranceCm / 100.0f) {}
 
 void CartesianLegChecker::setTolerance(float toleranceCm) {
