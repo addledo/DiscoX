@@ -51,9 +51,9 @@ void SensorManager::update(const Eigen::Vector3f &rawMag, const Eigen::Vector3f 
         emaInc_ = filtInc;
         emaSeeded_ = true;
     } else {
-        float azErr = circularDiff(emaAz_, filtAz);
-        float incErr = fabsf(emaInc_ - filtInc);
-        if (azErr > jumpThreshold_ || incErr > jumpThreshold_) {
+        Shot prev(emaAz_, emaInc_, 1.0f);
+        Shot next(filtAz, filtInc, 1.0f);
+        if (radiansToDegrees(prev.angleTo(next)) > jumpThreshold_) {
             // Large discontinuity — snap to new value immediately
             emaAz_ = filtAz;
             emaInc_ = filtInc;
@@ -151,4 +151,3 @@ float SensorManager::medianN(float *vals, uint8_t n) {
     }
     return vals[n / 2];
 }
-
