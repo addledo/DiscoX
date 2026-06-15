@@ -1078,6 +1078,7 @@ static void pollMeasurement(uint32_t now) {
     ctx.readings.distance =
         (distMm / 1000.0f) +
         (ctx.config.measureFromFront ? -Defaults::laserFrontOffset : ctx.config.laserDistanceOffset);
+
     lastDistance = ctx.readings.distance;
     Serial.print(F("MEAS: dist="));
     Serial.println(ctx.readings.distance, 3);
@@ -1752,6 +1753,7 @@ static void initFlash() {
             configMgr.saveConfig(ctx.config);
         }
         ctx.legChecker.setTolerance(ctx.config.cartesianTolerance);
+        ctx.stabilityChecker.setTolerance(ctx.config.stabilityTolerance);
 
         if (dispOk) {
             display.setBrightness(ctx.config.screenBrightness);
