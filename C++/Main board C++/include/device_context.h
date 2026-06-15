@@ -28,7 +28,6 @@ struct Config {
     float emaAlphaStable = Defaults::emaAlphaStable;
     float emaAlphaMoving = Defaults::emaAlphaMoving;
     float legAngleTolerance = Defaults::legAngleTolerance;
-    float legDistanceTolerance = Defaults::legDistanceTolerance;
     float cartesianTolerance = Defaults::cartesianTolerance;
     float laserDistanceOffset = Defaults::laserDistanceOffset;
     float calMagConsistency = Defaults::calMagConsistency;

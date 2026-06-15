@@ -14,7 +14,6 @@ constexpr float emaAlphaStable = 0.05f;         // low alpha when stationary (ma
 constexpr float emaAlphaMoving = 0.6f;          // high alpha when moving (responsive)
 constexpr float emaJumpThreshold = 8.0f;        // degrees — snap EMA when error exceeds this
 constexpr float legAngleTolerance = 1.7f;       // degrees
-constexpr float legDistanceTolerance = 0.05f;   // meters
 constexpr float cartesianTolerance = 10.0f;     // cm (BCRA grade 5)
 constexpr float cartesianToleranceMin = 1.0f;   // cm
 constexpr float cartesianToleranceMax = 200.0f; // cm
