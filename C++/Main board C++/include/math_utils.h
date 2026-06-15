@@ -11,7 +11,9 @@ inline float radiansToDegrees(float rad) { return rad * RAD2DEG; }
 // Wraps a value to [-180, 180).
 inline float wrapTo180(float d) {
     float r = fmodf(d + 180.0f, 360.0f);
-    if (r < 0.0f) r += 360.0f;
+    if (r < 0.0f) {
+        r += 360.0f;
+    }
     return r - 180.0f;
 }
 

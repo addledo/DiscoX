@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Arduino.h>
 #include "defaults.h"
+#include <Arduino.h>
 
 // ── Button pins (all active LOW with internal pull-ups) ─────────────
 constexpr uint8_t PIN_BTN_MEASURE = A3;  // Button 1 — take measurement
