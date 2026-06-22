@@ -156,6 +156,9 @@ static uint32_t discoHoldStart = 0;
 static bool discoHolding = false;
 static bool discoTriggered = false; // true once disco toggled during this hold
 
+// ── Toast notifications ─────────────────────────────────────────────
+static uint32_t splaysToastTime = 0;
+
 // ── BLE state ───────────────────────────────────────────────────────
 static bool lastBleConnected = false;
 
@@ -887,7 +890,11 @@ static void pollButtons(uint32_t now) {
             if (discoTriggered) {
                 discoTriggered = false;
             } else {
-                ctx.laserEnabled ? startShot(QUCK_SHOT) : prepareForShot();
+                if (ctx.config.splaysEnabled) {
+                    ctx.laserEnabled ? startShot(QUCK_SHOT) : prepareForShot();
+                } else {
+                    splaysToastTime = millis();
+                }
             }
             return;
         }
@@ -1422,6 +1429,27 @@ static void updateDisplay(uint32_t now) {
     if (!dispOk) {
         return;
     }
+
+    // Show "Splays not enabled" toast for 2s, suppressing normal refresh
+    if (splaysToastTime != 0) {
+        if (now - splaysToastTime < 2000) {
+            if (now - lastDisplayRefresh >= Timing::DISPLAY_REFRESH_MS) {
+                lastDisplayRefresh = now;
+                auto &d = display.getDisplay();
+                d.clearDisplay();
+                d.setTextColor(SH110X_WHITE);
+                d.setTextSize(2);
+                d.setCursor(0, 44);
+                d.println(F("Splays not"));
+                d.println(F("enabled"));
+                d.display();
+            }
+            return;
+        } else {
+            splaysToastTime = 0;
+        }
+    }
+
     if (now - lastDisplayRefresh < Timing::DISPLAY_REFRESH_MS) {
         return;
     }

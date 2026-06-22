@@ -33,6 +33,7 @@ constexpr uint32_t autoShutdownTimeout = 1800; // seconds (30 min)
 constexpr uint32_t laserTimeout = 120;         // seconds (2 min)
 constexpr bool laserWibble = true;             // blink laser on leg detect
 constexpr bool measureFromFront = false;       // false = Back (add offset), true = Front (raw laser)
+constexpr bool splaysEnabled = false;          // enable splay shots on button 2 short press
 constexpr uint8_t screenBrightness = 255;      // OLED contrast 0-255
 constexpr char bleName[] = "SAP6_Unicorn";
 constexpr uint8_t bleNameMaxLen = 20; // max chars for BLE name
