@@ -189,6 +189,7 @@ static void checkLaserTimeout(uint32_t now);
 static void updateDisplay(uint32_t now);
 
 // ── Forward declarations — helpers ──────────────────────────────────
+static void showSplaysDisabledToast();
 static void handleMeasurementSuccess();
 static void alertError(const char *errCode);
 static void resetLaser();
@@ -802,6 +803,20 @@ static void readSensorsUpdate(uint32_t now) {
     }
 }
 
+static void showSplaysDisabledToast() {
+    if (dispOk) {
+        auto &d = display.getDisplay();
+        d.clearDisplay();
+        d.setTextColor(SH110X_WHITE);
+        d.setTextSize(2);
+        d.setCursor(0, 44);
+        d.println(F("Splays not"));
+        d.println(F("enabled"));
+        d.display();
+    }
+    splaysToastTime = millis();
+}
+
 static void startDisco() {
     disco.turnOn();
     ctx.discoOn = true;
@@ -893,7 +908,8 @@ static void pollButtons(uint32_t now) {
                 if (ctx.config.splaysEnabled) {
                     ctx.laserEnabled ? startShot(QUCK_SHOT) : prepareForShot();
                 } else {
-                    splaysToastTime = millis();
+                    showSplaysDisabledToast();
+                    laser.failureBeep();
                 }
             }
             return;
@@ -1430,9 +1446,11 @@ static void updateDisplay(uint32_t now) {
         return;
     }
 
-    // Show "Splays not enabled" toast for 2s, suppressing normal refresh
+    // Show "Splays not enabled" toast for 2s, suppressing normal refresh.
+    // Use millis() not now — now is stale from the top of loop() and may
+    // predate splaysToastTime (set after a blocking beep), causing underflow.
     if (splaysToastTime != 0) {
-        if (now - splaysToastTime < 2000) {
+        if (millis() - splaysToastTime < 1200) {
             if (now - lastDisplayRefresh >= Timing::DISPLAY_REFRESH_MS) {
                 lastDisplayRefresh = now;
                 auto &d = display.getDisplay();
