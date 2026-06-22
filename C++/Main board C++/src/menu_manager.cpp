@@ -113,8 +113,7 @@ void MenuManager::buildMenu() {
 
     snprintf(_cartesianLabel, sizeof(_cartesianLabel), "Leg tol: %dcm", (int)_ctx->config.cartesianTolerance);
 
-    snprintf(_splaysLabel, sizeof(_splaysLabel), "Splays: %s",
-             _ctx->config.splaysEnabled ? "On" : "Off");
+    updateSplaysLabel();
 
     snprintf(_measureFromLabel, sizeof(_measureFromLabel), "Measure from: %s",
              _ctx->config.measureFromFront ? "Front" : "Back");
@@ -132,7 +131,6 @@ void MenuManager::buildMenu() {
     _measureFromSub.init(*_display, _measureFromLabel);
     _reformatSub.init(*_display, "Reformat (via USB)");
     _cartesianSub.init(*_display, _cartesianLabel);
-    _splaySub.init(*_display, _splaysLabel);
 
     // ── Root menu items ────────────────────────────────
     _root.addAction("Exit", exitMenu);
@@ -209,7 +207,7 @@ void MenuManager::buildMenu() {
     _settingsSub.addSubmenu(_shutdownLabel, &_shutdownSub);
     _settingsSub.addSubmenu(_brightnessLabel, &_brightnessSub);
     _settingsSub.addSubmenu(_cartesianLabel, &_cartesianSub);
-    _settingsSub.addSubmenu(_splaysLabel, &_splaySub);
+    _settingsSub.addAction(_splaysLabel, toggleSplays);
     _settingsSub.addAction("Edit Settings File", enterUsbDrive);
     _settingsSub.addSubmenu("Reformat (via USB)", &_reformatSub);
     _settingsSub.addAction("<- Back", goToRoot);
@@ -227,11 +225,6 @@ void MenuManager::buildMenu() {
     _cartesianSub.addAction("25 cm", setCartesianTolerance, 25);
     _cartesianSub.addAction("30 cm", setCartesianTolerance, 30);
     _cartesianSub.addAction("<- Back", goToSettings);
-
-    // ── Splays submenu ──────────────────────────────────────────────────
-    _splaySub.addAction("On", setSplaysOn);
-    _splaySub.addAction("Off", setSplaysOff);
-    _splaySub.addAction("<- Back", goToSettings);
 
     // ── Reformat submenu (recovery — opens USB mode to format on a PC) ──
     _reformatSub.addAction("No", goToSettings);
@@ -470,24 +463,20 @@ void MenuManager::setCartesianTolerance(int value) {
     s_instance->buildMenu();
 }
 
-void MenuManager::setSplaysOn(int) {
-    if (!s_instance) {
-        return;
-    }
-    s_instance->_ctx->config.splaysEnabled = true;
-    s_instance->_cfgMgr->saveConfig(s_instance->_ctx->config);
-    Serial.println(F("Menu: splays ON"));
-    s_instance->buildMenu();
+void MenuManager::updateSplaysLabel() {
+    snprintf(_splaysLabel, sizeof(_splaysLabel), "Splays: %s",
+             _ctx->config.splaysEnabled ? "On" : "Off");
 }
 
-void MenuManager::setSplaysOff(int) {
+void MenuManager::toggleSplays(int) {
     if (!s_instance) {
         return;
     }
-    s_instance->_ctx->config.splaysEnabled = false;
+    s_instance->_ctx->config.splaysEnabled = !s_instance->_ctx->config.splaysEnabled;
     s_instance->_cfgMgr->saveConfig(s_instance->_ctx->config);
-    Serial.println(F("Menu: splays OFF"));
-    s_instance->buildMenu();
+    Serial.print(F("Menu: splays "));
+    Serial.println(s_instance->_ctx->config.splaysEnabled ? F("ON") : F("OFF"));
+    s_instance->updateSplaysLabel();
 }
 
 void MenuManager::exitMenu(int) {

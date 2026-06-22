@@ -38,6 +38,7 @@ class MenuManager {
 
   private:
     void buildMenu();
+    void updateSplaysLabel();
 
     // Menu hierarchy (statically allocated, rebuilt on setting changes)
     FruityMenu _root;
@@ -53,7 +54,6 @@ class MenuManager {
     FruityMenu _measureFromSub;
     FruityMenu _reformatSub;
     FruityMenu _cartesianSub;
-    FruityMenu _splaySub;
 
     // Dynamic label buffers (updated in buildMenu)
     char _anomalyLabel[24];
@@ -98,7 +98,6 @@ class MenuManager {
     static void setMeasureFromFront(int);
     static void setMeasureFromBack(int);
     static void setCartesianTolerance(int value);
-    static void setSplaysOn(int);
-    static void setSplaysOff(int);
+    static void toggleSplays(int);
     static void exitMenu(int);
 };
